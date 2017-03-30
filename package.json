@@ -1,0 +1,20 @@
+{
+  "name": "gesture-coder",
+  "version": "1.0.0",
+  "description": "A web gesture-coder UI component for mobile devices.",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "run": "http-server"
+  },
+  "keywords": [
+    "UI",
+    "component",
+    "gesture-coder"
+  ],
+  "author": "zphhhhh",
+  "license": "MIT",
+  "dependencies": {
+    "http-server": "^0.9.0"
+  }
+}

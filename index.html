@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>手势密码</title>
+    <style>
+        body {
+            position: relative;
+            margin: 0;
+            background: #eeeef0;
+        }
+        
+        h1 {
+            margin: 0;
+            padding: 30px 20px 20px 20px;
+            border-bottom: 1px solid #b0b0b0;
+            background: #fff;
+            text-align: center;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+        }
+        
+        .gc__block {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            align-items: flex-start;
+            align-content: flex-start;
+            width: 300px;
+            margin: 40px auto 20px auto;
+        }
+        
+        .gc__circle {
+            box-sizing: border-box;
+            position: relative;
+            margin: 20px;
+            width: 60px;
+            height: 60px;
+            border: 1px solid #f48403;
+            color: rgba(0, 0, 0, 0);
+            background-color: #ffa726;
+            background-color: #ffe5be;
+            border-radius: 30px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: background-color .5s;
+            z-index: 10;
+        }
+        
+        .gc__circle.gc__circle--active {
+            background-color: #ffa726;
+            transition: background-color .5s;
+        }
+        
+        .gc__lines {
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        
+        .gc__line {
+            position: absolute;
+            height: 4px;
+            border-radius: 2px;
+            background-color: #d22410;
+            transform-origin: 2px 2px;
+            z-index: 1;
+        }
+        
+        .gc__tips {
+            height: 30px;
+        }
+        
+        .gc__control {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .gc__control label {
+            margin: 5px;
+            font-size: 1.125em;
+        }
+        
+        .gc__message {
+            height: 300px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>手势密码</h1>
+    <div class="container">
+        <div class="gc__block">
+            <div class="gc__circle">1</div>
+            <div class="gc__circle">2</div>
+            <div class="gc__circle">3</div>
+            <div class="gc__circle">4</div>
+            <div class="gc__circle">5</div>
+            <div class="gc__circle">6</div>
+            <div class="gc__circle">7</div>
+            <div class="gc__circle">8</div>
+            <div class="gc__circle">9</div>
+            <div class="gc__lines"></div>
+        </div>
+        <div class="gc__tips">请输入手势密码</div>
+        <div class="gc__control">
+            <label class="gc__label"><input name="controller" class="gc__controller" type="radio" value="set"> 设置密码</label>
+            <label class="gc__label"><input name="controller" class="gc__controller" type="radio" value="verify" checked> 验证密码</label>
+        </div>
+        <div class="gc__message">初始密码为 1235789，与题目配图一致</div>
+    </div>
+
+
+    <script>
+        // 手势密码
+        // container: 组件容器
+        // password: 初始密码，默认为 '1235789'
+        let GestureCoder = function (container, password) {
+            if (!container) {
+                return null
+            }
+
+            try {
+                window.localStorage && (window.localStorage.truePassword = window.localStorage.truePasswordd)
+            } catch (e) {
+                alert('您正处于无痕模式\n请退出无痕模式重试 :(')
+                return null
+            }
+
+
+
+            // 清除状态
+            let clear = () => {
+                this.password = ''
+                this.lines.innerHTML = ''
+
+                let circles = this.container.getElementsByClassName('gc__circle')
+                for (let i = 0; i < circles.length; i++) {
+                    circles[i].classList.remove('gc__circle--active')
+                }
+            }
+
+            // 计算顺时针角度 0-360
+            let getAngle = (x, y, z) => {
+                let angle = Math.round(180 / (Math.PI / Math.acos(x / z)))
+                if (y < 0) {
+                    angle = 360 - angle
+                }
+
+                return angle
+            }
+
+            // 获取两个点之间的距离
+            let getDistance = (p1, p2) => {
+                let x = p1.x - p2.x
+                let y = p1.y - p2.y
+
+                return Math.sqrt(x ** 2 + y ** 2)
+            }
+
+            // 更新线段样式
+            let renderLine = (renderDOM, styleObj) => {
+                for (let item in styleObj) {
+                    renderDOM.style[item] = styleObj[item]
+                }
+            }
+
+            // 获取触摸点接触到的密码点
+            let getCollideCircle = (point) => {
+                let circles = container.getElementsByClassName('gc__circle')
+                for (let i = 0; i < circles.length; i++) {
+                    if (circles[i].classList.contains('gc__circle--active')) {
+                        continue
+                    }
+
+                    let rect = circles[i].getClientRects()[0]
+                    let origin = {
+                        x: circles[i].offsetLeft + rect.width / 2,
+                        y: circles[i].offsetTop + rect.height / 2
+                    }
+
+                    let distance = getDistance(point, origin)
+
+                    if (distance < rect.width / 2) {
+                        return circles[i]
+                    }
+                }
+                // for (let item of circles) {
+                //     if (item.classList.contains('gc__circle--active')) {
+                        
+                //     } else {
+
+
+                //         let rect = item.getClientRects()[0]
+                //         let origin = {
+                //             x: rect.left + rect.width / 2,
+                //             y: rect.top + rect.height / 2
+                //         }
+
+                //         let distance = getDistance(point, origin)
+
+                //         if (distance < rect.width / 2) {
+                //             return item
+                //         }
+                //     }
+                // }
+
+                return null
+            }
+
+            // 获取密码点的圆心坐标
+            let getCirclePoint = (circle) => {
+                let rect = circle.getClientRects()[0];
+
+                // return {
+                //     x: rect.left + rect.width / 2,
+                //     y: rect.top + rect.height / 2
+                // }
+                return {
+                    x: circle.offsetLeft + rect.width / 2,
+                    y: circle.offsetTop + rect.height / 2
+                }
+
+            }
+
+            // 用 dom 作为线段，连接两个密码点
+            let renderPointsLine = (dom, p1, p2) => {
+                let x = p1.x - p2.x
+                let y = p1.y - p2.y
+                let z = Math.sqrt(x ** 2 + y ** 2)
+
+                let angle = getAngle(x, y, z)
+
+                renderLine(dom, {
+                    width: Math.round(z) + 1 + 'px',
+                    transform: "rotate(" + angle + "deg)"
+                })
+            }
+
+            // 加入这个密码
+            let addDecoder = (circle) => {
+                if (!circle) {
+                    return
+                }
+
+                circle.classList.add('gc__circle--active')
+                this.password += circle.innerHTML
+
+                // 连接两个密码点
+                let origin = getCirclePoint(circle)
+                renderPointsLine(this.line, origin, this.curOrigin)
+
+                // 设置当前参考的密码点
+                this.curOrigin = origin
+
+                // 初始化一个新的线段
+                this.line = document.createElement('div');
+                this.line.classList.add('gc__line');
+                initRenderLine(this.line)
+                this.lines.appendChild(this.line);
+            }
+
+            // 首次更新新线段的样式
+            let initRenderLine = (dom) => {
+                let x = this.touch.x - this.curOrigin.x
+                let y = this.touch.y - this.curOrigin.y
+                let z = Math.sqrt(x ** 2 + y ** 2)
+                let angle = getAngle(x, y, z)
+
+                renderLine(this.line, {
+                    left: this.curOrigin.x - 1 + 'px',
+                    top: this.curOrigin.y - 1 + 'px',
+                    width: getDistance(this.curOrigin, this.touch) + 'px',
+                    transform: "rotate(" + angle + "deg)"
+                })
+            }
+
+            let checkRadio = (radio) => {
+                radio.checked = true
+                this.controller = radio.value
+                if (this.controller === 'set') {
+                    showTips('请输入旧密码')
+                } else if (this.controller === 'verify') {
+                    showTips('请输入手势密码')
+                }
+                console.log(this.controller)
+            }
+
+            let setRadio = (value) => {
+                let radios = container.getElementsByClassName('gc__controller')
+                for (let i = 0; i < radios.length; i++) {
+                    if (radios[i].value === value) {
+                        radios[i].checked = true
+                        break
+                    }
+                }
+            }
+
+            let showTips = (msg) => {
+                this.tips.innerHTML = msg
+            }
+
+            this.container = container
+            this.tips = container.getElementsByClassName('gc__tips')[0] // 用于设置当前提示信息
+            this.controller = 'verify'       // 控制当前状态，`verify`验证密码, `set`设置密码-旧密码, `new`设置密码-新密码, `renew`设置密码-重复新密码
+            this.password = ''               // 记录用户已输入的密码
+            this.truePassword = (window.localStorage && window.localStorage.truePassword)
+                || password
+                || '123456' // 初始密码，顺序为：localStorage、用户配置、默认`123456`
+
+            window.localStorage && (window.localStorage.truePassword = this.truePassword)
+
+            this.lines = container.getElementsByClassName('gc__lines')[0]
+            this.line = null                 // 用来表示最后一条线段的 dom
+            this.touch = { x: 0, y: 0 }      // 当前用户的触摸点坐标
+            this.curOrigin = { x: 0, y: 0 }  // 用户输入的最近一位密码的圆心坐标
+
+            // 开始输入密码
+            this.start = (e) => {
+                if (e.target && e.target.classList.contains('gc__circle')) {
+                    e.target.classList.add('gc__circle--active')
+
+                    this.password = e.target.innerHTML
+                    this.lines.innerHTML = ""
+                    this.touch.x = e.touches[0].pageX
+                    this.touch.y = e.touches[0].pageY
+                    this.curOrigin = getCirclePoint(e.target)
+
+                    this.line = document.createElement('div');
+                    this.line.classList.add('gc__line');
+                    renderLine(this.line, {
+                        left: this.curOrigin.x - 1 + 'px',
+                        top: this.curOrigin.y - 1 + 'px'
+                    })
+                    this.lines.appendChild(this.line);
+
+                    this.container.addEventListener('touchmove', this.move)
+                    this.container.addEventListener('touchend', this.end)
+                    e.preventDefault();
+                }
+
+            }
+
+            // 结束输入密码
+            this.end = (e) => {
+                switch (this.controller) {
+                    case 'verify': {
+                        this.password === this.truePassword ? showTips('恭喜你，成功啦 :)') : showTips('手势密码错误，请重试 :(')
+                        break
+                    }
+                    case 'set': {
+                        if (this.password === this.truePassword) {
+                            showTips('请输入新密码')
+                            this.controller = 'new'
+                        } else {
+                            showTips('密码错误，请重试')
+                        }
+                        break
+                    }
+                    case 'new': {
+                        if (this.password.length < 5) {
+                            showTips('新密码太短，至少需要 5 个点，请重试')
+                        } else {
+                            this.newpassword = this.password
+                            showTips('请再输一次新密码')
+                            this.controller = 'renew'
+                        }
+                        break
+                    }
+                    case 'renew': {
+                        if (this.password === this.newpassword) {
+                            this.truePassword = this.newpassword
+                            window.localStorage && (window.localStorage.truePassword = this.newpassword)
+                            showTips('密码已修改 ;)')
+                            this.controller = 'verify'
+                            setRadio('verify')
+                        } else {
+                            showTips('两次密码不一致，请重新输入新密码 ;)')
+                            this.controller = 'new'
+                        }
+                    }
+                }
+
+                clear()
+                this.container.removeEventListener('touchmove', this.move)
+                this.container.removeEventListener('touchend', this.end)
+
+                e.preventDefault();
+            }
+
+            // 继续输入密码
+            this.move = (e) => {
+                this.touch.x = e.touches[0].pageX
+                this.touch.y = e.touches[0].pageY
+
+                let collideRadius = getCollideCircle(this.touch)
+                if (collideRadius) {
+                    addDecoder(collideRadius)
+                } else {
+                    let x = this.touch.x - this.curOrigin.x
+                    let y = this.touch.y - this.curOrigin.y
+                    let z = Math.sqrt(x ** 2 + y ** 2)
+
+                    let angle = getAngle(x, y, z)
+                    renderLine(this.line, {
+                        width: Math.round(z) + 'px',
+                        transform: "rotate(" + angle + "deg)"
+                    })
+                }
+
+                e.preventDefault();
+            }
+
+            this.control = (e) => {
+                if (e.target) {
+                    if (e.target.classList.contains('gc__label')) {
+                        checkRadio(e.target.getElementsByClassName('gc__controller')[0])
+                        e.preventDefault();
+                    } else if (e.target.classList.contains('gc__controller')) {
+                        checkRadio(e.target)
+                        e.preventDefault();
+                    }
+                }
+            }
+        }
+
+        let container = document.getElementsByClassName('container')[0]
+
+        // 新建一个手势密码对象
+        let gc = new GestureCoder(container, '1235789')
+        // 只加入开始输入密码的监听器，避免一些 bug
+        container.addEventListener('touchstart', gc.start)
+        container.addEventListener('click', gc.control)
+        // container.addEventListener('tap', gc.control)
+    </script>
+</body>
+
+</html>
