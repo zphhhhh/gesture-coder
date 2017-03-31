@@ -115,6 +115,7 @@
         <div class="gc__control">
             <label class="gc__label"><input name="controller" class="gc__controller" type="radio" value="set"> 设置密码</label>
             <label class="gc__label"><input name="controller" class="gc__controller" type="radio" value="verify" checked> 验证密码</label>
+            <button class="gc__reset">无条件重置密码</button>
         </div>
         <div class="gc__message">初始密码为 1235789，与题目配图一致</div>
     </div>
@@ -130,13 +131,12 @@
             }
 
             try {
-                window.localStorage && (window.localStorage.truePassword = window.localStorage.truePasswordd)
+                window.localStorage.test = 'test'
+                delete window.localStorage.test
             } catch (e) {
                 alert('您正处于无痕模式\n请退出无痕模式重试 :(')
                 return null
             }
-
-
 
             // 清除状态
             let clear = () => {
@@ -194,25 +194,6 @@
                         return circles[i]
                     }
                 }
-                // for (let item of circles) {
-                //     if (item.classList.contains('gc__circle--active')) {
-                        
-                //     } else {
-
-
-                //         let rect = item.getClientRects()[0]
-                //         let origin = {
-                //             x: rect.left + rect.width / 2,
-                //             y: rect.top + rect.height / 2
-                //         }
-
-                //         let distance = getDistance(point, origin)
-
-                //         if (distance < rect.width / 2) {
-                //             return item
-                //         }
-                //     }
-                // }
 
                 return null
             }
@@ -221,10 +202,6 @@
             let getCirclePoint = (circle) => {
                 let rect = circle.getClientRects()[0];
 
-                // return {
-                //     x: rect.left + rect.width / 2,
-                //     y: rect.top + rect.height / 2
-                // }
                 return {
                     x: circle.offsetLeft + rect.width / 2,
                     y: circle.offsetTop + rect.height / 2
@@ -313,11 +290,9 @@
             this.tips = container.getElementsByClassName('gc__tips')[0] // 用于设置当前提示信息
             this.controller = 'verify'       // 控制当前状态，`verify`验证密码, `set`设置密码-旧密码, `new`设置密码-新密码, `renew`设置密码-重复新密码
             this.password = ''               // 记录用户已输入的密码
-            this.truePassword = (window.localStorage && window.localStorage.truePassword)
-                || password
-                || '123456' // 初始密码，顺序为：localStorage、用户配置、默认`123456`
+            this.truePassword = window.localStorage.truePassword || password || '123456' // 初始密码，顺序为：localStorage、用户配置、默认`123456`
 
-            window.localStorage && (window.localStorage.truePassword = this.truePassword)
+            window.localStorage.truePassword = this.truePassword
 
             this.lines = container.getElementsByClassName('gc__lines')[0]
             this.line = null                 // 用来表示最后一条线段的 dom
@@ -379,7 +354,7 @@
                     case 'renew': {
                         if (this.password === this.newpassword) {
                             this.truePassword = this.newpassword
-                            window.localStorage && (window.localStorage.truePassword = this.newpassword)
+                            window.localStorage.truePassword = this.newpassword
                             showTips('密码已修改 ;)')
                             this.controller = 'verify'
                             setRadio('verify')
@@ -431,6 +406,12 @@
                     }
                 }
             }
+
+            let reset = this.container.getElementsByClassName('gc__reset')[0]
+            reset && reset.addEventListener('click', (e) => {
+                window.localStorage.truePassword = '1235789'
+                alert('密码已重置 :)')
+            })
         }
 
         let container = document.getElementsByClassName('container')[0]
